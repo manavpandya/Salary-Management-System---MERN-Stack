@@ -63,34 +63,43 @@ export default function EmployeeForm({ employee, onSubmit, onCancel, isLoading }
     }
   };
 
-  const set = (field: keyof EmployeeFormData) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const set = (field: keyof EmployeeFormData) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = field === 'salary' ? Number(e.target.value) : e.target.value;
     setForm((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
+  const inputClass = (field: keyof EmployeeFormData) =>
+    `mt-1 block w-full rounded-md border ${errors[field] ? 'border-red-500' : 'border-gray-300'} px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500`;
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700">Full Name</label>
+        <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
+          Full Name
+        </label>
         <input
+          id="fullName"
           type="text"
           value={form.fullName}
           onChange={set('fullName')}
-          className={`mt-1 block w-full rounded-md border ${errors.fullName ? 'border-red-500' : 'border-gray-300'} px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500`}
+          className={inputClass('fullName')}
           placeholder="John Doe"
         />
         {errors.fullName && <p className="mt-1 text-sm text-red-500">{errors.fullName}</p>}
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700">Job Title</label>
+        <label htmlFor="jobTitle" className="block text-sm font-medium text-gray-700">
+          Job Title
+        </label>
         <input
+          id="jobTitle"
           type="text"
           value={form.jobTitle}
           onChange={set('jobTitle')}
           list="jobTitles"
-          className={`mt-1 block w-full rounded-md border ${errors.jobTitle ? 'border-red-500' : 'border-gray-300'} px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500`}
+          className={inputClass('jobTitle')}
           placeholder="e.g. Software Engineer"
         />
         <datalist id="jobTitles">
@@ -100,13 +109,16 @@ export default function EmployeeForm({ employee, onSubmit, onCancel, isLoading }
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700">Country</label>
+        <label htmlFor="country" className="block text-sm font-medium text-gray-700">
+          Country
+        </label>
         <input
+          id="country"
           type="text"
           value={form.country}
           onChange={set('country')}
           list="countries"
-          className={`mt-1 block w-full rounded-md border ${errors.country ? 'border-red-500' : 'border-gray-300'} px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500`}
+          className={inputClass('country')}
           placeholder="e.g. United States"
         />
         <datalist id="countries">
@@ -116,12 +128,15 @@ export default function EmployeeForm({ employee, onSubmit, onCancel, isLoading }
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700">Salary (USD)</label>
+        <label htmlFor="salary" className="block text-sm font-medium text-gray-700">
+          Salary (USD)
+        </label>
         <input
+          id="salary"
           type="number"
           value={form.salary || ''}
           onChange={set('salary')}
-          className={`mt-1 block w-full rounded-md border ${errors.salary ? 'border-red-500' : 'border-gray-300'} px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500`}
+          className={inputClass('salary')}
           placeholder="75000"
           min={0}
           max={10_000_000}
