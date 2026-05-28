@@ -1,11 +1,7 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import { AppError } from '../middleware/errorHandler';
-import type {
-  CreateEmployeeInput,
-  UpdateEmployeeInput,
-  EmployeeListQuery,
-  PaginatedResponse,
-} from '../types';
+import type { EmployeeListQuery, PaginatedResponse } from '../types';
+import type { CreateEmployeeInput, UpdateEmployeeInput } from '../validators/employeeValidator';
 
 const prisma = new PrismaClient();
 

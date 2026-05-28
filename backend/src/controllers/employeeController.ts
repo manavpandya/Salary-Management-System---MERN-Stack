@@ -14,7 +14,7 @@ export async function listEmployees(req: Request, res: Response, next: NextFunct
 
 export async function getEmployee(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const id = parseInt(req.params.id, 10);
+    const id = parseInt(req.params.id as string, 10);
     if (isNaN(id)) {
       res.status(400).json({ message: 'Invalid employee id' });
       return;
@@ -37,7 +37,7 @@ export async function createEmployee(req: Request, res: Response, next: NextFunc
 
 export async function updateEmployee(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const id = parseInt(req.params.id, 10);
+    const id = parseInt(req.params.id as string, 10);
     if (isNaN(id)) {
       res.status(400).json({ message: 'Invalid employee id' });
       return;
@@ -51,7 +51,7 @@ export async function updateEmployee(req: Request, res: Response, next: NextFunc
 
 export async function deleteEmployee(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const id = parseInt(req.params.id, 10);
+    const id = parseInt(req.params.id as string, 10);
     if (isNaN(id)) {
       res.status(400).json({ message: 'Invalid employee id' });
       return;

@@ -5,6 +5,7 @@ import app from '../src/app';
 const prisma = new PrismaClient();
 
 beforeAll(async () => {
+  await prisma.employee.deleteMany(); // Clear seeded data
   await prisma.employee.createMany({
     data: [
       { fullName: 'Alice Smith', jobTitle: 'Engineer', country: 'USA', salary: 80000 },
