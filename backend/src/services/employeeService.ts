@@ -1,9 +1,8 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import prisma from './prisma';
 import { AppError } from '../middleware/errorHandler';
 import type { EmployeeListQuery, PaginatedResponse } from '../types';
 import type { CreateEmployeeInput, UpdateEmployeeInput } from '../validators/employeeValidator';
-
-const prisma = new PrismaClient();
 
 export async function listEmployees(
   query: EmployeeListQuery,
@@ -12,14 +11,14 @@ export async function listEmployees(
 
   const where: Prisma.EmployeeWhereInput = {};
 
-  if (search) {
-    where.fullName = { contains: search };
+  if (search?.trim()) {
+    where.fullName = { contains: search.trim() };
   }
   if (country) {
-    where.country = { equals: country };
+    where.country = country;
   }
   if (jobTitle) {
-    where.jobTitle = { equals: jobTitle };
+    where.jobTitle = jobTitle;
   }
 
   const skip = (page - 1) * limit;
@@ -58,12 +57,18 @@ export async function createEmployee(input: CreateEmployeeInput) {
 }
 
 export async function updateEmployee(id: number, input: UpdateEmployeeInput) {
-  await getEmployeeById(id); // throws 404 if not found
+  const existing = await prisma.employee.findUnique({ where: { id } });
+  if (!existing) {
+    throw new AppError(404, `Employee with id ${id} not found`);
+  }
   return prisma.employee.update({ where: { id }, data: input });
 }
 
 export async function deleteEmployee(id: number) {
-  await getEmployeeById(id); // throws 404 if not found
+  const existing = await prisma.employee.findUnique({ where: { id } });
+  if (!existing) {
+    throw new AppError(404, `Employee with id ${id} not found`);
+  }
   await prisma.employee.delete({ where: { id } });
 }
 

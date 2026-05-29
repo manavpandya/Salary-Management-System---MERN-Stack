@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from './prisma';
 import type { CountrySalaryInsight, JobTitleInsight } from '../types';
-
-const prisma = new PrismaClient();
 
 export async function getSalaryInsightsByCountry(): Promise<CountrySalaryInsight[]> {
   const results = await prisma.employee.groupBy({

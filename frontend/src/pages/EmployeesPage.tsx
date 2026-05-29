@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import { Plus, X } from 'lucide-react';
 import EmployeeTable from '../components/employees/EmployeeTable';
 import EmployeeForm from '../components/employees/EmployeeForm';
@@ -7,6 +7,7 @@ import { useEmployees, useCreateEmployee, useUpdateEmployee, useDeleteEmployee }
 import type { Employee, EmployeeFormData, EmployeeFilters as Filters } from '../types';
 
 export default function EmployeesPage() {
+  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [country, setCountry] = useState('');
   const [jobTitle, setJobTitle] = useState('');
@@ -15,10 +16,15 @@ export default function EmployeesPage() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showForm, setShowForm] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const debouncedSearch = useCallback((value: string) => {
-    const timeout = setTimeout(() => setSearch(value), 300);
-    return () => clearTimeout(timeout);
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchInput(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setSearch(value);
+      setPage(1);
+    }, 300);
   }, []);
 
   const filters: Filters = useMemo(() => ({
@@ -62,13 +68,17 @@ export default function EmployeesPage() {
 
   const isSaving = createMutation.isPending || updateMutation.isPending;
 
+  const pagination = data?.pagination;
+  const startRecord = pagination ? (pagination.page - 1) * pagination.limit + 1 : 0;
+  const endRecord = pagination ? Math.min(pagination.page * pagination.limit, pagination.total) : 0;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Employees</h1>
         <button
           onClick={() => { setShowForm(true); setEditingEmployee(null); }}
-          className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
         >
           <Plus className="w-4 h-4" />
           Add Employee
@@ -81,7 +91,7 @@ export default function EmployeesPage() {
             <h2 className="text-lg font-semibold text-gray-900">
               {editingEmployee ? 'Edit Employee' : 'Add Employee'}
             </h2>
-            <button onClick={() => { setShowForm(false); setEditingEmployee(null); }} className="text-gray-400 hover:text-gray-600">
+            <button onClick={() => { setShowForm(false); setEditingEmployee(null); }} className="text-gray-400 hover:text-gray-600 transition-colors">
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -96,10 +106,10 @@ export default function EmployeesPage() {
 
       <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
         <EmployeeFilters
-          search={search}
+          search={searchInput}
           country={country}
           jobTitle={jobTitle}
-          onSearchChange={(v) => { debouncedSearch(v); setPage(1); }}
+          onSearchChange={handleSearchChange}
           onCountryChange={(v) => { setCountry(v); setPage(1); }}
           onJobTitleChange={(v) => { setJobTitle(v); setPage(1); }}
         />
@@ -124,25 +134,23 @@ export default function EmployeesPage() {
               sortOrder={sortOrder}
               onSort={handleSort}
             />
-            {data && data.pagination.totalPages > 1 && (
+            {pagination && pagination.totalPages > 1 && (
               <div className="flex items-center justify-between border-t border-gray-200 px-6 py-3">
                 <p className="text-sm text-gray-600">
-                  Showing {(data.pagination.page - 1) * data.pagination.limit + 1} to{' '}
-                  {Math.min(data.pagination.page * data.pagination.limit, data.pagination.total)} of{' '}
-                  {data.pagination.total} employees
+                  Showing {startRecord} to {endRecord} of {pagination.total} employees
                 </p>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={page <= 1}
-                    className="rounded-md border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="rounded-md border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     Previous
                   </button>
                   <button
-                    onClick={() => setPage((p) => Math.min(data.pagination.totalPages, p + 1))}
-                    disabled={page >= data.pagination.totalPages}
-                    className="rounded-md border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
+                    disabled={page >= pagination.totalPages}
+                    className="rounded-md border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     Next
                   </button>
