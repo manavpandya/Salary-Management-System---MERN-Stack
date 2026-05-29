@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import prisma from './services/prisma';
 import employeeRoutes from './routes/employees';
 import insightRoutes from './routes/insights';
 import { errorHandler } from './middleware/errorHandler';
@@ -7,8 +8,16 @@ import { errorHandler } from './middleware/errorHandler';
 const app = express();
 
 // Middleware
-app.use(cors());
-app.use(express.json());
+app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
+app.use(express.json({ limit: '1mb' }));
+
+// Request timeout middleware (30 seconds)
+app.use((_req, res, next) => {
+  res.setTimeout(30_000, () => {
+    res.status(503).json({ message: 'Request timeout' });
+  });
+  next();
+});
 
 // Health check
 app.get('/health', (_req, res) => {
@@ -30,9 +39,17 @@ app.use(errorHandler);
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
 
 if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
+  // Validate database connectivity using the shared Prisma instance
+  prisma.$queryRawUnsafe('SELECT 1')
+    .then(() => {
+      app.listen(PORT, () => {
+        console.log(`Server running on http://localhost:${PORT}`);
+      });
+    })
+    .catch((err) => {
+      console.error('FATAL: Database connection failed. Check DATABASE_URL.', err.message);
+      process.exit(1);
+    });
 }
 
 export default app;

@@ -4,16 +4,31 @@ import { AppError } from '../middleware/errorHandler';
 import type { EmployeeListQuery, PaginatedResponse } from '../types';
 import type { CreateEmployeeInput, UpdateEmployeeInput } from '../validators/employeeValidator';
 
+const VALID_SORT_FIELDS = ['fullName', 'jobTitle', 'country', 'salary', 'createdAt'] as const;
+const VALID_SORT_ORDERS = ['asc', 'desc'] as const;
+
+/**
+ * Sanitize search input: limit length, escape control characters
+ */
+function sanitizeSearch(input: string): string {
+  return input.trim().replace(/[\x00-\x1f]/g, '').slice(0, 100);
+}
+
 export async function listEmployees(
   query: EmployeeListQuery,
 ): Promise<PaginatedResponse<Prisma.EmployeeGetPayload<object>>> {
   const { page, limit, search, country, jobTitle, sortBy = 'createdAt', sortOrder = 'desc' } = query;
 
+  // Cap page to prevent deep offset performance issues
+  const safePage = Math.min(page, 1000);
+  const skip = (safePage - 1) * limit;
+
+  // Validate sort params to prevent injection into orderBy
+  const safeSortBy = VALID_SORT_FIELDS.includes(sortBy as any) ? sortBy : 'createdAt';
+  const safeSortOrder = VALID_SORT_ORDERS.includes(sortOrder as any) ? sortOrder : 'desc';
+
   const where: Prisma.EmployeeWhereInput = {};
 
-  if (search?.trim()) {
-    where.fullName = { contains: search.trim() };
-  }
   if (country) {
     where.country = country;
   }
@@ -21,13 +36,16 @@ export async function listEmployees(
     where.jobTitle = jobTitle;
   }
 
-  const skip = (page - 1) * limit;
+  // SQLite LIKE is case-insensitive for ASCII by default, so contains works correctly
+  if (search?.trim()) {
+    where.fullName = { contains: sanitizeSearch(search) };
+  }
 
   const [total, data] = await Promise.all([
     prisma.employee.count({ where }),
     prisma.employee.findMany({
       where,
-      orderBy: { [sortBy]: sortOrder },
+      orderBy: { [safeSortBy]: safeSortOrder },
       skip,
       take: limit,
     }),
@@ -37,7 +55,7 @@ export async function listEmployees(
     data,
     pagination: {
       total,
-      page,
+      page: safePage,
       limit,
       totalPages: Math.ceil(total / limit),
     },
@@ -53,7 +71,14 @@ export async function getEmployeeById(id: number) {
 }
 
 export async function createEmployee(input: CreateEmployeeInput) {
-  return prisma.employee.create({ data: input });
+  return prisma.employee.create({
+    data: {
+      fullName: input.fullName.trim().slice(0, 100),
+      jobTitle: input.jobTitle.trim().slice(0, 100),
+      country: input.country.trim().slice(0, 100),
+      salary: input.salary,
+    },
+  });
 }
 
 export async function updateEmployee(id: number, input: UpdateEmployeeInput) {

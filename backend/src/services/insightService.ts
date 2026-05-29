@@ -1,7 +1,25 @@
 import prisma from './prisma';
-import type { CountrySalaryInsight, JobTitleInsight, PaginatedJobTitleResponse } from '../types';
+import type { CountrySalaryInsight, PaginatedJobTitleResponse } from '../types';
+
+// Simple in-memory cache with TTL for aggregate queries
+const cache = new Map<string, { data: any; expiry: number }>();
+const CACHE_TTL = 60_000; // 1 minute
+
+function getCached<T>(key: string): T | undefined {
+  const entry = cache.get(key);
+  if (entry && Date.now() < entry.expiry) return entry.data as T;
+  cache.delete(key);
+  return undefined;
+}
+
+function setCache(key: string, data: any): void {
+  cache.set(key, { data, expiry: Date.now() + CACHE_TTL });
+}
 
 export async function getSalaryInsightsByCountry(): Promise<CountrySalaryInsight[]> {
+  const cached = getCached<CountrySalaryInsight[]>('by-country');
+  if (cached) return cached;
+
   const results = await prisma.employee.groupBy({
     by: ['country'],
     _min: { salary: true },
@@ -11,13 +29,16 @@ export async function getSalaryInsightsByCountry(): Promise<CountrySalaryInsight
     orderBy: { country: 'asc' },
   });
 
-  return results.map((r) => ({
+  const data = results.map((r) => ({
     country: r.country,
     minSalary: r._min.salary ?? 0,
     maxSalary: r._max.salary ?? 0,
     avgSalary: Math.round((r._avg.salary ?? 0) * 100) / 100,
     employeeCount: r._count.id,
   }));
+
+  setCache('by-country', data);
+  return data;
 }
 
 export async function getSalaryInsightsByJobTitle(
@@ -25,27 +46,38 @@ export async function getSalaryInsightsByJobTitle(
   page: number = 1,
   limit: number = 20,
 ): Promise<PaginatedJobTitleResponse> {
-  const where = country ? { country } : undefined;
+  const cacheKey = `by-job-title:${country || 'all'}`;
+  const cached = getCached<{ results: any[]; total: number }>(cacheKey);
 
-  const [results, total] = await Promise.all([
-    prisma.employee.groupBy({
+  let results: any[];
+  let total: number;
+
+  if (cached) {
+    results = cached.results;
+    total = cached.total;
+  } else {
+    const where = country ? { country } : undefined;
+
+    // Single pass: fetch all matching records (max 600 rows even without filter)
+    const allResults = await prisma.employee.groupBy({
       by: ['jobTitle', 'country'],
       where,
       _avg: { salary: true },
       _count: { id: true },
       orderBy: [{ country: 'asc' }, { jobTitle: 'asc' }],
-      skip: (page - 1) * limit,
-      take: limit,
-    }),
-    // Get total count from a separate count query
-    prisma.employee.groupBy({
-      by: ['jobTitle', 'country'],
-      where,
-      _count: true,
-    }).then((r) => r.length),
-  ]);
+    });
 
-  const data = results.map((r) => ({
+    total = allResults.length;
+    results = allResults;
+
+    setCache(cacheKey, { results, total });
+  }
+
+  // Apply pagination in-memory — total is small enough (<600 rows)
+  const start = (page - 1) * limit;
+  const paginated = results.slice(start, start + limit);
+
+  const data = paginated.map((r) => ({
     jobTitle: r.jobTitle,
     country: r.country,
     avgSalary: Math.round((r._avg.salary ?? 0) * 100) / 100,
@@ -69,6 +101,9 @@ export async function getTotalSalaryStats(): Promise<{
   totalCountries: number;
   totalJobTitles: number;
 }> {
+  const cached = getCached<ReturnType<typeof getTotalSalaryStats> extends Promise<infer T> ? T : never>('stats');
+  if (cached) return cached;
+
   const [empCount, avgResult, countries, jobTitles] = await Promise.all([
     prisma.employee.count(),
     prisma.employee.aggregate({ _avg: { salary: true } }),
@@ -76,10 +111,13 @@ export async function getTotalSalaryStats(): Promise<{
     prisma.employee.findMany({ distinct: ['jobTitle'], select: { jobTitle: true } }),
   ]);
 
-  return {
+  const stats = {
     totalEmployees: empCount,
     overallAvgSalary: Math.round((avgResult._avg.salary ?? 0) * 100) / 100,
     totalCountries: countries.length,
     totalJobTitles: jobTitles.length,
   };
+
+  setCache('stats', stats);
+  return stats;
 }
