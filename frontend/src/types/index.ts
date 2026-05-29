@@ -30,6 +30,8 @@ export interface EmployeeFilters {
   limit?: number;
 }
 
+export type SortOrder = 'asc' | 'desc';
+
 export interface CountrySalaryInsight {
   country: string;
   minSalary: number;

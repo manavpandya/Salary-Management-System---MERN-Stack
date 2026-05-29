@@ -13,8 +13,19 @@ export async function getSalaryByCountry(req: Request, res: Response, next: Next
 export async function getSalaryByJobTitle(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const country = req.query.country as string | undefined;
-    const insights = await insightService.getSalaryInsightsByJobTitle(country);
-    res.json(insights);
+    const page = Math.max(1, parseInt(req.query.page as string, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string, 10) || 20));
+    const result = await insightService.getSalaryInsightsByJobTitle(country, page, limit);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getStats(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const stats = await insightService.getTotalSalaryStats();
+    res.json(stats);
   } catch (err) {
     next(err);
   }

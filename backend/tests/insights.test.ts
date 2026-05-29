@@ -3,10 +3,7 @@ import prisma from '../src/services/prisma';
 import app from '../src/app';
 
 beforeAll(async () => {
-  // Use a unique test prefix to avoid conflict with seed data
-  await prisma.employee.deleteMany({
-    where: { fullName: { startsWith: 'TEST_' } }
-  });
+  await prisma.employee.deleteMany({ where: { fullName: { startsWith: 'TEST_' } } });
   await prisma.employee.createMany({
     data: [
       { fullName: 'TEST_Alice_Smith', jobTitle: 'Engineer', country: 'USA', salary: 80000 },
@@ -19,9 +16,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await prisma.employee.deleteMany({
-    where: { fullName: { startsWith: 'TEST_' } }
-  });
+  await prisma.employee.deleteMany({ where: { fullName: { startsWith: 'TEST_' } } });
   await prisma.$disconnect();
 });
 
@@ -34,7 +29,7 @@ describe('GET /api/insights/by-country', () => {
     const usa = res.body.find((i: any) => i.country === 'USA');
     expect(usa).toBeDefined();
     expect(usa.minSalary).toBeDefined();
-    expect(usa.employeeCount).toBeGreaterThanOrEqual(2);
+    expect(usa.employeeCount).toBe(2);
 
     const india = res.body.find((i: any) => i.country === 'India');
     expect(india).toBeDefined();
@@ -43,15 +38,37 @@ describe('GET /api/insights/by-country', () => {
 });
 
 describe('GET /api/insights/by-job-title', () => {
-  it('should return avg salary by job title', async () => {
+  it('should return paginated response with data array', async () => {
     const res = await request(app).get('/api/insights/by-job-title');
     expect(res.status).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.data).toBeDefined();
+    expect(Array.isArray(res.body.data)).toBe(true);
+    expect(res.body.pagination).toBeDefined();
+    expect(res.body.pagination.total).toBeGreaterThanOrEqual(3);
   });
 
   it('should filter by country when query param provided', async () => {
     const res = await request(app).get('/api/insights/by-job-title?country=USA');
     expect(res.status).toBe(200);
-    expect(res.body.every((i: any) => i.country === 'USA')).toBe(true);
+    expect(res.body.data.every((i: any) => i.country === 'USA')).toBe(true);
+  });
+
+  it('should honor pagination params', async () => {
+    const res = await request(app).get('/api/insights/by-job-title?page=1&limit=2');
+    expect(res.status).toBe(200);
+    expect(res.body.data.length).toBeLessThanOrEqual(2);
+    expect(res.body.pagination.page).toBe(1);
+    expect(res.body.pagination.limit).toBe(2);
+  });
+});
+
+describe('GET /api/insights/stats', () => {
+  it('should return overall salary stats', async () => {
+    const res = await request(app).get('/api/insights/stats');
+    expect(res.status).toBe(200);
+    expect(res.body.totalEmployees).toBeGreaterThanOrEqual(5);
+    expect(res.body.overallAvgSalary).toBeGreaterThan(0);
+    expect(res.body.totalCountries).toBeGreaterThanOrEqual(2);
+    expect(res.body.totalJobTitles).toBeGreaterThanOrEqual(2);
   });
 });

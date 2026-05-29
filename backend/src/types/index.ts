@@ -43,6 +43,16 @@ export interface JobTitleInsight {
   employeeCount: number;
 }
 
+export interface PaginatedJobTitleResponse {
+  data: JobTitleInsight[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
 export interface ApiError {
   message: string;
   errors?: Record<string, string[]>;
