@@ -1,15 +1,15 @@
 import { useState, useMemo, useCallback } from 'react';
-import { ArrowUpDown, ArrowUp, ArrowDown, BarChart3, Globe2, Users, DollarSign, Briefcase } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, Globe2, Users, DollarSign, Briefcase } from 'lucide-react';
 import { useSalaryByCountry, useSalaryByJobTitle, useSalaryStats } from '../hooks/useInsights';
 import { useCountries } from '../hooks/useEmployees';
-import type { JobTitleInsight, SortOrder } from '../types';
+import type { SortOrder } from '../types';
 
 type SortField = 'jobTitle' | 'country' | 'avgSalary' | 'employeeCount';
-type TableId = 'country' | 'jobTitle';
 
 const formatCurrency = (v: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(v);
 
+/** Renders the appropriate sort icon based on current sort state */
 function SortIcon({ active, direction }: { active: boolean; direction: SortOrder }) {
   if (!active) return <ArrowUpDown className="w-3.5 h-3.5 ml-1 text-gray-300 inline" />;
   return direction === 'asc'
@@ -29,7 +29,7 @@ export default function InsightsPage() {
   const { data: jobTitleResponse, isLoading: loadingJobTitles } = useSalaryByJobTitle(selectedCountry || undefined, page, 20);
   const { data: stats, isLoading: loadingStats } = useSalaryStats();
 
-  // Client-side sort the job title data
+  // Client-side sort the paginated job title data within the current page
   const sortedData = useMemo(() => {
     if (!jobTitleResponse?.data) return [];
     const sorted = [...jobTitleResponse.data].sort((a, b) => {
@@ -42,7 +42,7 @@ export default function InsightsPage() {
       }
       return sortOrder === 'asc' ? cmp : -cmp;
     });
-    // Apply client-side search filter
+    // Client-side text filter on current page
     if (searchFilter.trim()) {
       const q = searchFilter.toLowerCase();
       return sorted.filter(
@@ -93,7 +93,7 @@ export default function InsightsPage() {
         </div>
       )}
 
-      {/* Country salary summary */}
+      {/* Country salary summary — always fits in one view (< 20 rows) */}
       <div className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
           <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
@@ -133,7 +133,7 @@ export default function InsightsPage() {
         )}
       </div>
 
-      {/* By job title within country — with pagination, sorting, search */}
+      {/* By job title within country — paginated, sortable, searchable */}
       <div className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

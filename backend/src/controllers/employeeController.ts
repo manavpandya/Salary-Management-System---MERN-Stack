@@ -8,21 +8,24 @@ export async function listEmployees(req: Request, res: Response, next: NextFunct
     const result = await employeeService.listEmployees(query);
     res.json(result);
   } catch (err) {
-    next(err);
+    next(err as Error);
   }
+}
+
+/** Parse an id from URL params, returning 400 if invalid */
+function parseId(raw: string): number | null {
+  const id = parseInt(raw, 10);
+  return isNaN(id) ? null : id;
 }
 
 export async function getEmployee(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const id = parseInt(req.params.id as string, 10);
-    if (isNaN(id)) {
-      res.status(400).json({ message: 'Invalid employee id' });
-      return;
-    }
+    const id = parseId(req.params.id as string);
+    if (id === null) { res.status(400).json({ message: 'Invalid employee id' }); return; }
     const employee = await employeeService.getEmployeeById(id);
     res.json(employee);
   } catch (err) {
-    next(err);
+    next(err as Error);
   }
 }
 
@@ -31,35 +34,29 @@ export async function createEmployee(req: Request, res: Response, next: NextFunc
     const employee = await employeeService.createEmployee(req.body);
     res.status(201).json(employee);
   } catch (err) {
-    next(err);
+    next(err as Error);
   }
 }
 
 export async function updateEmployee(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const id = parseInt(req.params.id as string, 10);
-    if (isNaN(id)) {
-      res.status(400).json({ message: 'Invalid employee id' });
-      return;
-    }
+    const id = parseId(req.params.id as string);
+    if (id === null) { res.status(400).json({ message: 'Invalid employee id' }); return; }
     const employee = await employeeService.updateEmployee(id, req.body);
     res.json(employee);
   } catch (err) {
-    next(err);
+    next(err as Error);
   }
 }
 
 export async function deleteEmployee(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const id = parseInt(req.params.id as string, 10);
-    if (isNaN(id)) {
-      res.status(400).json({ message: 'Invalid employee id' });
-      return;
-    }
+    const id = parseId(req.params.id as string);
+    if (id === null) { res.status(400).json({ message: 'Invalid employee id' }); return; }
     await employeeService.deleteEmployee(id);
     res.status(204).send();
   } catch (err) {
-    next(err);
+    next(err as Error);
   }
 }
 
@@ -68,7 +65,7 @@ export async function getDistinctCountries(req: Request, res: Response, next: Ne
     const countries = await employeeService.getDistinctCountries();
     res.json(countries);
   } catch (err) {
-    next(err);
+    next(err as Error);
   }
 }
 
@@ -77,6 +74,6 @@ export async function getDistinctJobTitles(req: Request, res: Response, next: Ne
     const jobTitles = await employeeService.getDistinctJobTitles();
     res.json(jobTitles);
   } catch (err) {
-    next(err);
+    next(err as Error);
   }
 }

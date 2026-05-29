@@ -45,10 +45,5 @@ export const employeeListQuerySchema = z.object({
   sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
 });
 
-export const insightQuerySchema = z.object({
-  country: z.string().trim().optional(),
-});
-
 export type CreateEmployeeInput = z.infer<typeof createEmployeeSchema>;
 export type UpdateEmployeeInput = z.infer<typeof updateEmployeeSchema>;
-export type EmployeeListQueryInput = z.infer<typeof employeeListQuerySchema>;

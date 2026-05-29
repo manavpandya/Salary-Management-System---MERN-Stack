@@ -6,7 +6,7 @@ export async function getSalaryByCountry(req: Request, res: Response, next: Next
     const insights = await insightService.getSalaryInsightsByCountry();
     res.json(insights);
   } catch (err) {
-    next(err);
+    next(err as Error);
   }
 }
 
@@ -18,7 +18,7 @@ export async function getSalaryByJobTitle(req: Request, res: Response, next: Nex
     const result = await insightService.getSalaryInsightsByJobTitle(country, page, limit);
     res.json(result);
   } catch (err) {
-    next(err);
+    next(err as Error);
   }
 }
 
@@ -27,6 +27,6 @@ export async function getStats(req: Request, res: Response, next: NextFunction):
     const stats = await insightService.getTotalSalaryStats();
     res.json(stats);
   } catch (err) {
-    next(err);
+    next(err as Error);
   }
 }

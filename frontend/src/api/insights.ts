@@ -1,13 +1,13 @@
-import axios from 'axios';
+import api from './client';
 import type { CountrySalaryInsight, JobTitleInsight, PaginatedResponse } from '../types';
 
-const api = axios.create({ baseURL: '/api' });
-
+/** Fetch min/max/avg salary grouped by country */
 export async function fetchSalaryByCountry(): Promise<CountrySalaryInsight[]> {
   const { data } = await api.get<CountrySalaryInsight[]>('/insights/by-country');
   return data;
 }
 
+/** Fetch paginated avg salary by job title, optionally filtered by country */
 export async function fetchSalaryByJobTitle(
   country?: string,
   page: number = 1,
@@ -19,12 +19,15 @@ export async function fetchSalaryByJobTitle(
   return data;
 }
 
-export async function fetchSalaryStats(): Promise<{
+export interface SalaryStats {
   totalEmployees: number;
   overallAvgSalary: number;
   totalCountries: number;
   totalJobTitles: number;
-}> {
-  const { data } = await api.get('/insights/stats');
+}
+
+/** Fetch overall salary statistics across all employees */
+export async function fetchSalaryStats(): Promise<SalaryStats> {
+  const { data } = await api.get<SalaryStats>('/insights/stats');
   return data;
 }

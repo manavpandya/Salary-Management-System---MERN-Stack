@@ -101,7 +101,7 @@ export async function getTotalSalaryStats(): Promise<{
   totalCountries: number;
   totalJobTitles: number;
 }> {
-  const cached = getCached<ReturnType<typeof getTotalSalaryStats> extends Promise<infer T> ? T : never>('stats');
+  const cached = getCached<{ totalEmployees: number; overallAvgSalary: number; totalCountries: number; totalJobTitles: number }>('stats');
   if (cached) return cached;
 
   const [empCount, avgResult, countries, jobTitles] = await Promise.all([

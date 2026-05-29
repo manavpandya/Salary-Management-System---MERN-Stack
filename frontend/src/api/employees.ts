@@ -1,13 +1,14 @@
-import axios from 'axios';
+import api from './client';
 import type { Employee, PaginatedResponse, EmployeeFilters, EmployeeFormData } from '../types';
 
-const api = axios.create({ baseURL: '/api' });
-
+/**
+ * Fetch employees with pagination, search, filter, and sort support.
+ * Sends only defined filter values to keep query strings clean.
+ */
 export async function fetchEmployees(
   filters: EmployeeFilters
 ): Promise<PaginatedResponse<Employee>> {
   const params: Record<string, string | number> = {};
-
   if (filters.page) params.page = filters.page;
   if (filters.limit) params.limit = filters.limit;
   if (filters.search) params.search = filters.search;
@@ -39,11 +40,13 @@ export async function deleteEmployee(id: number): Promise<void> {
   await api.delete(`/employees/${id}`);
 }
 
+/** Fetch distinct countries from the employee dataset */
 export async function fetchCountries(): Promise<string[]> {
   const { data } = await api.get<string[]>('/employees/countries');
   return data;
 }
 
+/** Fetch distinct job titles from the employee dataset */
 export async function fetchJobTitles(): Promise<string[]> {
   const { data } = await api.get<string[]>('/employees/job-titles');
   return data;
