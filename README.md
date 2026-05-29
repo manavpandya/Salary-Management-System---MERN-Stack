@@ -2,11 +2,15 @@
 
 A production-quality full-stack web application for managing 10,000 employees with salary analytics. Built with React, Express, Prisma, and SQLite.
 
-![Employees Page](docs/screenshots/employees-page.png)
-![Edit Employee](docs/screenshots/edit-employee.png)
-![Add Employee](docs/screenshots/add-employee.png)
-![Salary Insights](docs/screenshots/salary-insights.png)
-![Insights Job Title](docs/screenshots/insights-job-title.png)
+### Screenshots
+
+| Employees List | Edit Employee | Add Employee |
+|---|---|---|
+| ![Employees List](docs/screenshots/employees-list.png) | ![Edit Employee](docs/screenshots/edit-employee.png) | ![Add Employee](docs/screenshots/add-employee.png) |
+
+| Salary Insights | Job Title Breakdown |
+|---|---|
+| ![Salary Insights](docs/screenshots/salary-insights.png) | ![Job Title Breakdown](docs/screenshots/job-title-breakdown.png) |
 
 ---
 
